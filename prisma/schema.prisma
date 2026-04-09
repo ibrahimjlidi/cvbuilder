@@ -1,0 +1,186 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// User model for authentication
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String?
+  password  String?
+  image     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  cvs                CVs[]
+  jobApplications    JobApplication[]
+  interviews         Interview[]
+  jobAlerts          JobAlert[]
+
+  @@map("users")
+}
+
+// CV Management
+model CVs {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String   @default("My CV")
+  
+  // Personal Info
+  fullName    String?
+  email       String?
+  phone       String?
+  location    String?
+  headline    String?
+  about       String? 
+  
+  // Professional Details
+  experience  String?  // JSON stored as text
+  education   String?  // JSON stored as text
+  skills      String?  // JSON stored as text
+  projects    String?  // JSON stored as text
+  certifications String? // JSON stored as text
+  languages   String?  // JSON stored as text
+  
+  // Metadata
+  exported    Boolean  @default(false)
+  exportedAt  DateTime?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("cvs")
+}
+
+// Job Listings for Job Alerts
+model JobListing {
+  id          String   @id @default(cuid())
+  title       String
+  company     String
+  location    String
+  type        String   // "Full-time", "Part-time", "Contract", "Remote"
+  description String  
+  salary      String?
+  url         String?
+  source      String   // "LinkedIn", "Indeed", "Jobs Board", etc.
+  postedAt    DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("job_listings")
+}
+
+// Job Alerts
+model JobAlert {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  keywords    String  
+  locations   String? 
+  jobTypes    String? 
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("job_alerts")
+}
+
+// Job Applications Tracking
+model JobApplication {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  jobTitle    String
+  company     String
+  position    String?
+  location    String?
+  jobUrl      String?
+  
+  status      String   @default("Applied") // "Applied", "Rejected", "Interview", "Offer", "Negotiating", "Accepted"
+  appliedDate DateTime @default(now())
+  
+  // Interview tracking
+  interviewDate DateTime?
+  interviewType String?  // "Phone", "Technical", "HR", "In-person"
+  
+  // Notes & Follow-up
+  notes       String? 
+  followUpDate DateTime?
+  salary      String?
+  benefits    String? 
+  nextAction  String?
+  
+  // Metrics
+  rating      Int?     // 1-5 stars
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  interview   Interview?
+
+  @@map("job_applications")
+}
+
+// Interview Tracking & Preparation
+model Interview {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  jobApplicationId String   @unique
+  jobApplication  JobApplication @relation(fields: [jobApplicationId], references: [id], onDelete: Cascade)
+  
+  company         String
+  position        String
+  interviewDate   DateTime
+  interviewType   String   // "Phone", "Technical", "HR", "In-person", "Group"
+  duration        Int?     // in minutes
+  
+  // Interview Details
+  interviewers    String?
+  topics          String? 
+  questions       InterviewQuestion[]
+  
+  // Performance
+  difficulty      String?  // "Easy", "Medium", "Hard"
+  performance     String?  // "Poor", "Good", "Excellent", "Learning"
+  feedback        String? 
+  
+  // Preparation
+  preparedTopics  String? 
+  notes           String? 
+  result          String?  // "Passed", "Pending", "Failed"
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("interviews")
+}
+
+// Interview Practice Questions
+model InterviewQuestion {
+  id          String   @id @default(cuid())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  
+  question    String
+  category    String   // "React", "TypeScript", "System Design", "Behavioral"
+  difficulty  String   // "Easy", "Medium", "Hard"
+  answer      String? 
+  notes       String? 
+  practiceCount Int    @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("interview_questions")
+}
